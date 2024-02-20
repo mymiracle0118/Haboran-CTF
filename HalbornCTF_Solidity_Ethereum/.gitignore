@@ -9,7 +9,7 @@ out/
 
 # Docs
 docs/
-/HalbornCTF_Solidity_Ethereum/lib
+/HalbornCTF_Solidity_Ethereum/lib/
 /HalbornCTF_Solidity_Ethereum/cache
 /HalbornCTF_Solidity_Ethereum/out
 # Dotenv file
