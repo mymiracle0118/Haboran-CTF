@@ -8,7 +8,8 @@
     "test": "npm run test:unit",
     "test:unit": "forge test --match-path ./test/** -vv",
     "test:halborn": "forge test --match-path ./test/Halborn.t.sol -vv",
-    "test:upgrade": "forge test --match-path ./test/Halborn.t.sol -vvvvv --match-test testUpdgrade"
+    "test:upgrade": "forge test --match-path ./test/Halborn.t.sol -vv --match-test testUpdgrade",
+    "test:reentrancy": "forge test --match-path ./test/Halborn.t.sol -vv --match-test testReentrancyAttack"
   },
   "devDependencies": {
   }

@@ -63,7 +63,7 @@ contract HalbornLoans is
 
     function getLoan(uint256 amount) external {
         require(
-            totalCollateral[msg.sender] - usedCollateral[msg.sender] < amount,
+            totalCollateral[msg.sender] - usedCollateral[msg.sender] >= amount,
             "Not enough collateral"
         );
         usedCollateral[msg.sender] += amount;
@@ -73,7 +73,7 @@ contract HalbornLoans is
     function returnLoan(uint256 amount) external {
         require(usedCollateral[msg.sender] >= amount, "Not enough collateral");
         require(token.balanceOf(msg.sender) >= amount);
-        usedCollateral[msg.sender] += amount;
+        usedCollateral[msg.sender] -= amount;
         token.burnToken(msg.sender, amount);
     }
 

