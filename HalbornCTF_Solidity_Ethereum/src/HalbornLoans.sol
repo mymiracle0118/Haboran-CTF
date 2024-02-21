@@ -6,9 +6,15 @@ import {HalbornNFT} from "./HalbornNFT.sol";
 
 import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {Initializable} from "openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import {IERC721Receiver} from "./interface/IERC721Receiver.sol";
 import {MulticallUpgradeable} from "./libraries/Multicall.sol";
 
-contract HalbornLoans is Initializable, UUPSUpgradeable, MulticallUpgradeable {
+contract HalbornLoans is
+    Initializable,
+    UUPSUpgradeable,
+    MulticallUpgradeable,
+    IERC721Receiver
+{
     HalbornToken public token;
     HalbornNFT public nft;
 
@@ -72,4 +78,13 @@ contract HalbornLoans is Initializable, UUPSUpgradeable, MulticallUpgradeable {
     }
 
     function _authorizeUpgrade(address) internal override {}
+
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) external pure override returns (bytes4) {
+        return IERC721Receiver.onERC721Received.selector;
+    }
 }

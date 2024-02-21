@@ -38,12 +38,12 @@ contract HalbornNFT is
         price = price_;
     }
 
-    function setMerkleRoot(bytes32 merkleRoot_) public {
+    function setMerkleRoot(bytes32 merkleRoot_) public { // @audit-issue missing access restriction
         merkleRoot = merkleRoot_;
     }
 
     function mintAirdrops(uint256 id, bytes32[] calldata merkleProof) external {
-        require(_exists(id), "Token already minted");
+        require(!_exists(id), "Token already minted"); // @audit-issue 
 
         bytes32 node = keccak256(abi.encodePacked(msg.sender, id));
         bool isValidProof = MerkleProofUpgradeable.verifyCalldata(
@@ -67,7 +67,7 @@ contract HalbornNFT is
     }
 
     function withdrawETH(uint256 amount) external onlyOwner {
-        payable(owner()).transfer(amount);
+        payable(owner()).transfer(amount); // @audit-issue use low-level `call` function
     }
 
     function _authorizeUpgrade(address) internal override {}
