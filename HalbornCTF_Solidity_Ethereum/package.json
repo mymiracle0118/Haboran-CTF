@@ -1,0 +1,15 @@
+{
+  "name": "Halborn",
+  "scripts": {
+    "setup": "curl -L https://foundry.paradigm.xyz | bash && foundryup",
+    "compile": "forge build",
+    "clean": "forge clean",
+    "slither": "slither .",
+    "test": "npm run test:unit",
+    "test:unit": "forge test --match-path ./test/** -vv",
+    "test:halborn": "forge test --match-path ./test/Halborn.t.sol -vv",
+    "test:upgrade": "forge test --match-path ./test/Halborn.t.sol -vvvvv --match-test testUpdgrade"
+  },
+  "devDependencies": {
+  }
+}

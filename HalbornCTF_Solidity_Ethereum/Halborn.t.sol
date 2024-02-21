@@ -74,22 +74,6 @@ contract HalbornTest is Test {
         assertEq(ALICE, nft.ownerOf(3));
     }
 
-    function testUpdgrade() public {
-        vm.deal(ALICE, 1 ether);
-
-        bytes memory item = abi.encodeWithSignature(
-            "_upgradeToAndCallUUPS(address newimplementation)",
-            address(nft),
-            new bytes(0),
-            false
-        );
-        bytes[] memory data = new bytes[](1);
-        data[0] = item;
-
-        vm.prank(ALICE);
-        token.multicall{value: 1 ether}(data);
-    }
-
     function testRevertMintAfterAirDrop() public {
         Merkle m = new Merkle();
         // Test Data
@@ -126,7 +110,7 @@ contract HalbornTest is Test {
         vm.stopPrank();
     }
 
-    function testRevertGetLoan() public {
+    function testIncorrectCheckingCollateralInGetLoan() public {
         vm.deal(ALICE, 1 ether);
 
         vm.prank(ALICE);
@@ -141,16 +125,20 @@ contract HalbornTest is Test {
 
         vm.stopPrank();
 
-        assertEq(
-            address(loans),
-            nft.ownerOf(1),
-            "Loans contract is not the owner of token 1"
-        );
+        assertEq(address(loans), nft.ownerOf(1), "Loans contract is not the owner of token 1");
         assertEq(loans.totalCollateral(ALICE), 2 ether);
         assertEq(loans.usedCollateral(ALICE), 0);
 
         vm.prank(ALICE);
         vm.expectRevert();
         loans.getLoan(1 ether);
+
+        assertEq(token.balanceOf(BOB), 0);
+        assertEq(loans.totalCollateral(BOB), 0);
+        assertEq(loans.usedCollateral(BOB), 0);
+        vm.prank(BOB);
+        loans.getLoan(10 ether);
+
+        assertEq(token.balanceOf(BOB), 10 ether);
     }
 }
